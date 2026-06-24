@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <title>Dual YouTube Player</title>
     <style>
-        .player-container { display: flex; gap: 20px; margin-top: 20px; }
-        .controls { margin-top: 20px; }
+        body { font-family: sans-serif; padding: 20px; }
+        .player-container { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+        .player-box { width: 560px; height: 315px; background: #333; border: 2px solid #555; position: relative; color: white; display: flex; align-items: center; justify-content: center; }
+        .player-box:after { content: 'Player Waiting...'; font-size: 1.2rem; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        button { padding: 8px 15px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -23,11 +27,72 @@
     </div>
 
     <div class="player-container">
-        <div id="player1"></div>
-        <div id="player2"></div>
+        <!-- เราจะเปลี่ยน div เป็น class แทน id เพื่อทำ placeholder -->
+        <div id="player1" class="player-box"></div>
+        <div id="player2" class="player-box"></div>
     </div>
 
+    <!-- โหลดไลบรารี YouTube API -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js"></script>
+
+    <!-- !!! โค้ด JavaScript ทั้งหมดรวมอยู่ที่นี่ !!! -->
+    <script>
+        let player1, player2;
+        let isApiReady = false;
+
+        // ฟังก์ชันนี้จะถูกเรียกอัตโนมัติเมื่อ YouTube API โหลดเสร็จ
+        function onYouTubeIframeAPIReady() {
+            isApiReady = true;
+            console.log('YouTube API is Ready');
+        }
+
+        // ฟังก์ชันแยก Video ID ออกจาก URL (รองรับทั้ง youtube.com และ youtu.be)
+        function extractVideoID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function loadVideos() {
+            if (!isApiReady) return alert("ระบบกำลังโหลด API กรุณารอสักครู่");
+
+            const vid1 = extractVideoID(document.getElementById('url1').value);
+            const vid2 = extractVideoID(document.getElementById('url2').value);
+
+            if (!vid1 || !vid2) return alert("กรุณาใส่ลิงก์ YouTube ให้ถูกต้องทั้ง 2 ช่อง");
+
+            // สร้าง Player 1 (และลบ class placeholder)
+            if (player1) player1.destroy();
+            player1 = new YT.Player('player1', { height: '315', width: '560', videoId: vid1 });
+            document.getElementById('player1').classList.remove('player-box');
+
+            // สร้าง Player 2 (และลบ class placeholder)
+            if (player2) player2.destroy();
+            player2 = new YT.Player('player2', { height: '315', width: '560', videoId: vid2 });
+            document.getElementById('player2').classList.remove('player-box');
+        }
+
+        function playBoth() {
+            if (player1 && player2) {
+                player1.playVideo();
+                player2.playVideo();
+            }
+        }
+
+        function pauseBoth() {
+            if (player1 && player2) {
+                player1.pauseVideo();
+                player2.pauseVideo();
+            }
+        }
+
+        function syncAndPlay() {
+            if (player1 && player2) {
+                player1.seekTo(0);
+                player2.seekTo(0);
+                playBoth();
+            }
+        }
+    </script>
 </body>
 </html>
